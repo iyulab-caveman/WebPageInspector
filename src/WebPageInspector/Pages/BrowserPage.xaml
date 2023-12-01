@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<iyu:NavigationPage
+    x:Class="WebPageInspector.Pages.BrowserPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WebPageInspector.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:tk="using:CommunityToolkit.WinUI.Controls"
+    xmlns:iyu="using:Iyu.Windows.Navigation"
+    xmlns:bh="using:Iyu.Windows.Behaviors"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <iyu:NavigationPage.Resources>
+        <Thickness x:Key="XXSmallLeftTopRightBottomMargin">4,4,4,4</Thickness>
+
+        <DataTemplate x:Key="Image.ItemTemplate">
+            <Border Background="{StaticResource CardBackgroundFillColorDefault}" CornerRadius="5"
+                    x:Name="border" bh:UIBehavior.UseHover="True">
+                <Grid>
+                    <Image Source="{Binding}" MaxHeight="120" MaxWidth="120"  />
+                    <Border Background="#8222" VerticalAlignment="Bottom" bh:UIBehavior.Visible="{Binding ElementName=border, Path=(bh:UIBehavior.IsHover), Mode=TwoWay}" >
+                        <TextBlock Text="{Binding}" HorizontalAlignment="Center" />
+                    </Border>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <Style x:Key="Image.ItemContainerStyle" TargetType="ListBoxItem">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </iyu:NavigationPage.Resources>
+    
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="8*" />
+            <ColumnDefinition Width="2*" MinWidth="200" MaxWidth="800" />
+        </Grid.ColumnDefinitions>
+
+        <Grid x:Name="ContentArea">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0">
+                    <Button x:Uid="BrowserBackButton" Command="{x:Bind VM.BrowserBackCommand, Mode=OneWay}" Padding="{StaticResource XXSmallLeftTopRightBottomMargin}">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72B;" />
+                    </Button>
+                    <Button x:Uid="BrowserForwardButton" Command="{x:Bind VM.BrowserForwardCommand, Mode=OneWay}" Padding="{StaticResource XXSmallLeftTopRightBottomMargin}">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72A;" />
+                    </Button>
+                </StackPanel>
+
+                <TextBox Grid.Column="1" VerticalAlignment="Center" 
+                         Text="{x:Bind WebView.Source, Mode=OneWay}"
+                         bh:UIBehavior.ActionCommand="{x:Bind NavigateLinkCommand}"
+                         />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="4,0">
+                    <Button x:Uid="ReloadButton" Command="{x:Bind VM.ReloadCommand}" Padding="{StaticResource XXSmallLeftTopRightBottomMargin}">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE72C;" />
+                    </Button>
+                    <Button x:Uid="OpenInBrowserButton" Command="{x:Bind VM.OpenInBrowserCommand}" Padding="{StaticResource XXSmallLeftTopRightBottomMargin}">
+                        <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="&#xE774;" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <WebView2 Grid.Row="1" x:Name="WebView" Source="{x:Bind VM.Source, Mode=OneWay}" />
+
+            <StackPanel Grid.Row="1"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{x:Bind VM.IsLoading, Mode=OneWay}">
+                <ProgressRing IsActive="{x:Bind VM.IsLoading, Mode=OneWay}" />
+                <TextBlock x:Uid="WebView_Loading" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="1"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{x:Bind VM.HasFailures, Mode=OneWay}">
+                <TextBlock x:Uid="WebView_FailedMessage" HorizontalAlignment="Center" TextWrapping="WrapWholeWords" />
+                <HyperlinkButton x:Uid="WebView_Reload" Command="{x:Bind VM.ReloadCommand}" HorizontalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <tk:GridSplitter HorizontalAlignment="Right" VerticalAlignment="Stretch" IsThumbVisible="False" />
+
+        <ScrollViewer Grid.Column="1">
+            <StackPanel Spacing="8">
+                <Expander Header="Html" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <TextBox Text="{x:Bind Context.Html, Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="True" IsSpellCheckEnabled="False" MaxHeight="400" />
+                </Expander>
+                
+                <Expander Header="Metadata" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
+                    <ListBox ItemsSource="{x:Bind Context.Metadatas, Mode=OneWay}" MaxHeight="400" 
+                             SelectionMode="Extended"
+                             bh:UIBehavior.EnableCopy="True" />
+                </Expander>
+                
+                <Expander Header="Text" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <TextBox Text="{x:Bind Context.Text, Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="True" IsSpellCheckEnabled="False" MaxHeight="400" 
+                             bh:UIBehavior.EnableCopy="True" />
+                </Expander>
+
+                <Expander Header="Links" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
+                    <ListBox ItemsSource="{x:Bind Context.Links, Mode=OneWay}" MaxHeight="400" 
+                             SelectionMode="Extended"
+                             bh:UIBehavior.EnableCopy="True" 
+                             bh:UIBehavior.ActionCommand="{x:Bind BrowseLinkCommand}" />
+                </Expander>
+
+                <Expander Header="Images" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
+                    <ListBox ItemsSource="{x:Bind Context.Images, Mode=OneWay}" MaxHeight="400" 
+                             ItemTemplate="{StaticResource Image.ItemTemplate}"
+                             ItemContainerStyle="{StaticResource Image.ItemContainerStyle}"
+                             HorizontalContentAlignment="Stretch"
+                             SelectionMode="Extended"
+                             bh:UIBehavior.EnableCopy="True" 
+                             bh:UIBehavior.ActionCommand="{x:Bind ShowImageCommand}" />
+                </Expander>
+
+                <Expander Header="Emails" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
+                    <ListBox ItemsSource="{x:Bind Context.Emails, Mode=OneWay}" MaxHeight="400" 
+                             SelectionMode="Extended"
+                             bh:UIBehavior.EnableCopy="True" />
+                </Expander>
+                
+                <Expander Header="Regex" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <StackPanel Spacing="4">
+                        <TextBox Text="{x:Bind Expression, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Regular Expressions" />
+                        <TextBlock Text="Matches" Style="{StaticResource BaseTextBlockStyle}" />
+                        <ListBox MaxHeight="400" 
+                                 ItemsSource="{x:Bind Matches, Mode=OneWay}"
+                                 SelectionMode="Extended"
+                                 bh:UIBehavior.EnableCopy="True" />
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</iyu:NavigationPage>

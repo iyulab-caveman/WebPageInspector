@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WebPageInspector.Prod (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "WebPageInspector.Prod (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
