@@ -5,33 +5,35 @@ using Microsoft.UI.Xaml.Controls;
 using HtmlAgilityPack;
 using Iyu.Windows.Mvvm;
 using Iyu.Windows;
+using Iyu;
 
-namespace WebPageInspector.Pages
+namespace WebPageInspector.Contexts
 {
     public partial class WebPageContext : ObservableObject
     {
-        private readonly WebView2 wv;
+        private readonly WeakReference<WebView2> wvRef;
+        public WebView2? WebView => wvRef.TryGetTarget(out var wv) ? wv : null;
+
         [ObservableProperty] private string? html;
 
         private string url;
-
         private string? text;
-        public string? Text => text ??= GetText();
 
         private IEnumerable<string>? metadatas;
-        public IEnumerable<string>? Metadatas { get => this.GetPropertyValue(ref metadatas, InitMetadatas); set => this.SetPropertyValue(ref metadatas, value); }
-
         private IEnumerable<string>? links;
-        public IEnumerable<string>? Links { get => this.GetPropertyValue(ref links, InitLinks); set => this.SetPropertyValue(ref links, value); }
-
         private IEnumerable<string>? images;
-        public IEnumerable<string>? Images { get => this.GetPropertyValue(ref images, InitImagesAsync); set => this.SetPropertyValue(ref images, value); }
-
         private IEnumerable<string>? emails;
+        
+        public IEnumerable<string>? Metadatas { get => this.GetPropertyValue(ref metadatas, InitMetadatas); set => this.SetPropertyValue(ref metadatas, value); }
+        public IEnumerable<string>? Links { get => this.GetPropertyValue(ref links, InitLinks); set => this.SetPropertyValue(ref links, value); }
+        public IEnumerable<string>? Images { get => this.GetPropertyValue(ref images, InitImagesAsync); set => this.SetPropertyValue(ref images, value); }
         public IEnumerable<string>? Emails { get => this.GetPropertyValue(ref emails, InitEmails); set => this.SetPropertyValue(ref emails, value); }
+        
+        public string? Text => text ??= GetText();
+        
         public WebPageContext(WebView2 wv, string? html)
         {
-            this.wv = wv;
+            this.wvRef = new WeakReference<WebView2>(wv);
             this.html = html;
 
             this.url = wv.Source.OriginalString;
@@ -46,7 +48,7 @@ namespace WebPageInspector.Pages
             return text;
         }
 
-        public IEnumerable<string> InitMetadatas()
+        private IEnumerable<string>? InitMetadatas()
         {
             var html = Html;
             if (string.IsNullOrWhiteSpace(html))
@@ -75,7 +77,7 @@ namespace WebPageInspector.Pages
             return metadatas;
         }
 
-        public IEnumerable<string> InitLinks()
+        private IEnumerable<string> InitLinks()
         {
             var html = Html;
             if (string.IsNullOrWhiteSpace(html))
@@ -103,7 +105,10 @@ namespace WebPageInspector.Pages
                     else
                         return $"{url}{path}";
                 }));
-            }   
+            }
+
+            // 이미지 형식의 링크는 제외
+            var exceptNames = new[] { ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico" };
 
             // 텍스트 노드에서 "http://" 또는 "https://"로 시작하는 모든 URL 찾기
             var textNodes = htmlDoc.DocumentNode.SelectNodes("//text()[contains(., 'http://') or contains(., 'https://')]");
@@ -117,7 +122,11 @@ namespace WebPageInspector.Pages
                     {
                         if (match.Success)
                         {
-                            links.Add(match.Value);
+                            // 이미지 형식의 링크는 제외
+                            if (exceptNames.Any(p => match.Value.EndsWith(p))) continue;
+
+                            var v = match.Value.LeftOr(")}");
+                            links.Add(v);
                         }
                     }
                 }
@@ -126,17 +135,17 @@ namespace WebPageInspector.Pages
             return links.Distinct().ToList();
         }
 
-        public Task<IEnumerable<string>> InitImagesAsync()
+        private Task<IEnumerable<string>> InitImagesAsync()
         {
             return UIHelper.BeginInvoke(async () =>
             {
-                if (wv == null) return Enumerable.Empty<string>();
+                if (WebView == null) return Enumerable.Empty<string>();
 
                 try
                 {
                     // JavaScript 코드를 작성하여 모든 이미지의 src 속성을 가져옵니다.
                     var script = @"Array.from(document.images).map(img => img.src);";
-                    var result = await wv.ExecuteScriptAsync(script);
+                    var result = await WebView.ExecuteScriptAsync(script);
 
                     // 결과 처리 (JSON 형식으로 반환되므로 처리 필요)
                     var jsonResult = System.Text.Json.JsonSerializer.Deserialize<string[]>(result);
@@ -151,7 +160,7 @@ namespace WebPageInspector.Pages
             });
         }
 
-        public IEnumerable<string> InitEmails()
+        private IEnumerable<string> InitEmails()
         {
             var html = Html;
             if (string.IsNullOrWhiteSpace(html))

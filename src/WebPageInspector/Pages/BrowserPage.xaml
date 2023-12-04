@@ -9,31 +9,14 @@
     xmlns:tk="using:CommunityToolkit.WinUI.Controls"
     xmlns:iyu="using:Iyu.Windows.Navigation"
     xmlns:bh="using:Iyu.Windows.Behaviors"
+    xmlns:localBh="using:WebPageInspector.Behaviors"
+    xmlns:c="using:WebPageInspector.Controls"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <iyu:NavigationPage.Resources>
+    <UserControl.Resources>
         <Thickness x:Key="XXSmallLeftTopRightBottomMargin">4,4,4,4</Thickness>
-
-        <DataTemplate x:Key="Image.ItemTemplate">
-            <Border Background="{StaticResource CardBackgroundFillColorDefault}" CornerRadius="5"
-                    x:Name="border" bh:UIBehavior.UseHover="True">
-                <Grid>
-                    <Image Source="{Binding}" MaxHeight="120" MaxWidth="120"  />
-                    <Border Background="#8222" VerticalAlignment="Bottom" bh:UIBehavior.Visible="{Binding ElementName=border, Path=(bh:UIBehavior.IsHover), Mode=TwoWay}" >
-                        <TextBlock Text="{Binding}" HorizontalAlignment="Center" />
-                    </Border>
-                </Grid>
-            </Border>
-        </DataTemplate>
-
-        <Style x:Key="Image.ItemContainerStyle" TargetType="ListBoxItem">
-            <Setter Property="Margin" Value="0" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        </Style>
-    </iyu:NavigationPage.Resources>
+    </UserControl.Resources>
     
     <Grid>
         <Grid.ColumnDefinitions>
@@ -77,7 +60,10 @@
                 </StackPanel>
             </Grid>
 
-            <WebView2 Grid.Row="1" x:Name="WebView" Source="{x:Bind VM.Source, Mode=OneWay}" />
+            <WebView2 Grid.Row="1" x:Name="WebView" 
+                      Source="{x:Bind VM.Source, Mode=OneWay}" 
+                      localBh:BrowserBehavior.UseContext="true"
+                      />
 
             <StackPanel Grid.Row="1"
                         HorizontalAlignment="Center"
@@ -98,57 +84,6 @@
 
         <tk:GridSplitter HorizontalAlignment="Right" VerticalAlignment="Stretch" IsThumbVisible="False" />
 
-        <ScrollViewer Grid.Column="1">
-            <StackPanel Spacing="8">
-                <Expander Header="Html" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                    <TextBox Text="{x:Bind Context.Html, Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="True" IsSpellCheckEnabled="False" MaxHeight="400" />
-                </Expander>
-                
-                <Expander Header="Metadata" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
-                    <ListBox ItemsSource="{x:Bind Context.Metadatas, Mode=OneWay}" MaxHeight="400" 
-                             SelectionMode="Extended"
-                             bh:UIBehavior.EnableCopy="True" />
-                </Expander>
-                
-                <Expander Header="Text" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                    <TextBox Text="{x:Bind Context.Text, Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="True" IsSpellCheckEnabled="False" MaxHeight="400" 
-                             bh:UIBehavior.EnableCopy="True" />
-                </Expander>
-
-                <Expander Header="Links" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
-                    <ListBox ItemsSource="{x:Bind Context.Links, Mode=OneWay}" MaxHeight="400" 
-                             SelectionMode="Extended"
-                             bh:UIBehavior.EnableCopy="True" 
-                             bh:UIBehavior.ActionCommand="{x:Bind BrowseLinkCommand}" />
-                </Expander>
-
-                <Expander Header="Images" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
-                    <ListBox ItemsSource="{x:Bind Context.Images, Mode=OneWay}" MaxHeight="400" 
-                             ItemTemplate="{StaticResource Image.ItemTemplate}"
-                             ItemContainerStyle="{StaticResource Image.ItemContainerStyle}"
-                             HorizontalContentAlignment="Stretch"
-                             SelectionMode="Extended"
-                             bh:UIBehavior.EnableCopy="True" 
-                             bh:UIBehavior.ActionCommand="{x:Bind ShowImageCommand}" />
-                </Expander>
-
-                <Expander Header="Emails" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
-                    <ListBox ItemsSource="{x:Bind Context.Emails, Mode=OneWay}" MaxHeight="400" 
-                             SelectionMode="Extended"
-                             bh:UIBehavior.EnableCopy="True" />
-                </Expander>
-                
-                <Expander Header="Regex" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                    <StackPanel Spacing="4">
-                        <TextBox Text="{x:Bind Expression, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Regular Expressions" />
-                        <TextBlock Text="Matches" Style="{StaticResource BaseTextBlockStyle}" />
-                        <ListBox MaxHeight="400" 
-                                 ItemsSource="{x:Bind Matches, Mode=OneWay}"
-                                 SelectionMode="Extended"
-                                 bh:UIBehavior.EnableCopy="True" />
-                    </StackPanel>
-                </Expander>
-            </StackPanel>
-        </ScrollViewer>
+        <c:WebPageContextTool Grid.Column="1" Context="{Binding ElementName=WebView, Path=(localBh:BrowserBehavior.Context), Mode=OneWay}" />
     </Grid>
 </iyu:NavigationPage>
