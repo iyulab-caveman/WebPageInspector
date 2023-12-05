@@ -1,7 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HtmlAgilityPack;
+using Iyu.Windows;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Markup;
 using System.Text.RegularExpressions;
 using WebPageInspector.Behaviors;
 using WebPageInspector.Contexts;
@@ -92,6 +96,21 @@ namespace WebPageInspector.Controls
                     this.Matches = null;
                 }
             }
+        }
+    }
+
+    public class HtmlNodeTemplateSelector : DataTemplateSelector
+    {
+        protected override DataTemplate SelectTemplateCore(object item)
+        {
+            var xaml = $@"
+    <DataTemplate xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
+        <TreeViewItem ItemsSource=""{{Binding Children}}"" 
+                      Content=""{{Binding}}""  />
+    </DataTemplate>";
+
+            var template = XamlReader.Load(xaml) as DataTemplate;
+            return template ?? base.SelectTemplateCore(item);
         }
     }
 }

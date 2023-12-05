@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:bh="using:Iyu.Windows.Behaviors"
+    xmlns:html="HtmlAgilityPack"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -28,6 +29,9 @@
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
+
+        <local:HtmlNodeTemplateSelector x:Key="HtmlNodeTemplateSelector" />
+        
     </UserControl.Resources>
     
     <ScrollViewer Grid.Column="1">
@@ -80,6 +84,15 @@
                          bh:UIBehavior.EnableCopy="True" />
                 </StackPanel>
             </Expander>
+
+            <Expander Header="DOM Tree" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0">
+                <TreeView MaxHeight="400"
+                          ItemsSource="{x:Bind Context.Nodes, Mode=OneWay}" 
+                          ItemTemplateSelector="{StaticResource HtmlNodeTemplateSelector}" 
+                          SelectedItem="{x:Bind Context.SelectedNode, Mode=TwoWay}"
+                          />
+            </Expander>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>
