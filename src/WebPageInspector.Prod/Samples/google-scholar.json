@@ -1,0 +1,64 @@
+{
+  "Name": "Google Scholar Crawler",
+  "Description": "Gets information about articles searched by keyword in Google Scholar.",
+  "Steps": [
+    {
+      "type": "search",
+      "url": "https://scholar.google.com/scholar?hl=ko&as_sdt=0%2C5&q=${keyword}&btnG=",
+      "variables": {
+        "keyword": "AI 학습"
+      },
+      "NextPages": [
+        {
+          "StartWith": "https://scholar.google.com/scholar?start="
+        }
+      ]
+    },
+    {
+      "type": "navigate",
+      "rules": [
+        {
+          "PageIdentity": "dbpia",
+          "StartWith": "https://www.dbpia.co.kr"
+        },
+        {
+          "PageIdentity": "koreascience",
+          "Match": "koreascience.kr"
+        }
+      ]
+    },
+    {
+      "type": "extract",
+      "rules": [
+        {
+          "PageIdentity": "dbpia",
+          "Fields": [
+            {
+              "Name": "url",
+              "variable": "@url"
+            },
+            {
+              "Name": "title",
+              "Selector": ".thesisDetail__head"
+            },
+            {
+              "Name": "author",
+              "Selector": ".authorList"
+            },
+            {
+              "Name": "abstract",
+              "Selector": ".abstractTxt"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Output": {
+    "Format": "json",
+    "Storage": {
+      "Type": "file-system",
+      "Path": "path_to_output_file.json"
+    }
+  }
+}

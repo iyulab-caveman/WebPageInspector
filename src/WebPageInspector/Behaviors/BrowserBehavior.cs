@@ -60,23 +60,9 @@ namespace WebPageInspector.Behaviors
 
         private static async void WebView_NavigationCompleted(WebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
         {
-            try
-            {
-                var script = "document.documentElement.outerHTML;";
-                var result = await sender.ExecuteScriptAsync(script);
-
-                var html = System.Text.Json.JsonSerializer.Deserialize<string>(result);
-                if (string.IsNullOrEmpty(html))
-                    sender.ClearValue(HtmlProperty);
-                else
-                    sender.SetCurrentValue(HtmlProperty, html);
-
-                var context = new WebPageContext(sender, html);
-                sender.SetCurrentValue(ContextProperty, context);
-            }
-            catch (Exception)
-            {
-            }
+            var html = await sender.GetHtmlAsync();
+            var context = new WebPageContext(sender, html);
+            sender.SetCurrentValue(ContextProperty, context);
         }
 
         public static readonly DependencyProperty HtmlProperty = DependencyProperty.RegisterAttached("Html", typeof(string), typeof(BrowserBehavior), new PropertyMetadata(default(string)));
@@ -92,6 +78,21 @@ namespace WebPageInspector.Behaviors
         public static string? GetHtml(this WebView2 webView)
         {
             return BrowserBehavior.GetHtml(webView);
+        }
+
+        public static async Task<string> GetHtmlAsync(this WebView2 webView)
+        {
+            var script = "document.documentElement.outerHTML;";
+            var result = await webView.ExecuteScriptAsync(script);
+
+            var html = System.Text.Json.JsonSerializer.Deserialize<string>(result);
+
+            if (string.IsNullOrEmpty(html))
+                webView.ClearValue(BrowserBehavior.HtmlProperty);
+            else
+                webView.SetCurrentValue(BrowserBehavior.HtmlProperty, html);
+
+            return html ?? string.Empty;
         }
     }
 }

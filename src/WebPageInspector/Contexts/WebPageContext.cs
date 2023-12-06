@@ -23,7 +23,7 @@ namespace WebPageInspector.Contexts
         [ObservableProperty] private string? html;
         [ObservableProperty] private HtmlDocument? htmlDoc;
 
-        private string url;
+        public string Url { get; }
         private string? text;
         private string? title;
         private IEnumerable<HtmlNodeContext>? nodes;
@@ -41,6 +41,7 @@ namespace WebPageInspector.Contexts
         public string? Text => text ??= GetText();
         public string? Title => title ??= GetTitle();
         public IEnumerable<HtmlNodeContext> Nodes => nodes ??= HtmlNodeContext.Build(this.HtmlDoc!);
+
         [ObservableProperty] private HtmlNodeContext? selectedNode;
 
         public WebPageContext(WebView2 wv, string? html)
@@ -48,7 +49,7 @@ namespace WebPageInspector.Contexts
             this.wvRef = new WeakReference<WebView2>(wv);
             this.html = html;
 
-            this.url = wv.Source.OriginalString;
+            this.Url = wv.Source.OriginalString;
 
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(html);
@@ -156,7 +157,7 @@ function highlightNode(xpath) {
                     if (path.StartsWith("http"))
                         return path;
                     else
-                        return $"{url}{path}";
+                        return $"{Url}{path}";
                 }));
             }
 
@@ -239,6 +240,18 @@ function highlightNode(xpath) {
             return await Task.FromResult(emails);
         }
 
+        internal async Task<IEnumerable<string>> GetLinksAsync()
+        {
+            if (this.Links == null)
+            {
+                while(this.Links == null)
+                {
+                    await Task.Delay(100);
+                }
+            }
+            return this.Links;
+        }
+
         partial void OnSelectedNodeChanged(HtmlNodeContext? value)
         {
             // 기존 하이라이트 해제
@@ -257,6 +270,41 @@ function highlightNode(xpath) {
             string xpath = node.XPath;
             string script = $@"highlightNode('{xpath}');";
             return script;
+        }
+
+        internal async Task<string> GetElementTextBySelectorAsync(string selector)
+        {
+            if (WebView == null || string.IsNullOrEmpty(selector))
+                return string.Empty;
+
+            // JavaScript to select the element by the CSS selector and return its text content
+            string script = $@"(() => {{
+        var element = document.querySelector('{selector}');
+        return element ? element.textContent : '';
+    }})();";
+
+            try
+            {
+                // Execute the script and retrieve the result
+                var result = await WebView.ExecuteScriptAsync(script);
+                var r = System.Text.Json.JsonSerializer.Deserialize<string>(result);
+                return r?.Pretty() ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions
+                Debug.WriteLine("Error fetching element text by selector: " + ex.Message);
+                return string.Empty;
+            }
+        }
+
+        internal Task<string> GetElementTextByXPathAsync(string xpath)
+        {
+            if (HtmlDoc == null || string.IsNullOrEmpty(xpath))
+                return Task.FromResult(string.Empty);
+
+            var node = HtmlDoc.DocumentNode.SelectSingleNode(xpath);
+            return Task.FromResult(node?.InnerText.Pretty() ?? string.Empty);
         }
     }
 

@@ -30,6 +30,7 @@ namespace WebPageInspector
 
             services.AddSingleton<MEFService>();
             services.AddSingleton<IWebViewService, WebViewService>();
+            services.AddSingleton<WebCrawlingTaskService>();
         }
     }
 

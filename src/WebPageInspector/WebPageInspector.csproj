@@ -8,6 +8,7 @@
 	  <UseWinUI>true</UseWinUI>
 	  <ImplicitUsings>enable</ImplicitUsings>
 	  <Nullable>enable</Nullable>
+	  <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 	
   <ItemGroup>
@@ -16,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\iyu-framework.v4\src\Iyu.WinUI\Iyu.WinUI.csproj" />
+    <ProjectReference Include="..\WebPageInspector.Core\WebPageInspector.Core.csproj" />
   </ItemGroup>
 	
 </Project>
