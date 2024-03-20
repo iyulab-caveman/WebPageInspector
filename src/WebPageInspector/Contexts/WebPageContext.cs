@@ -6,6 +6,10 @@ using HtmlAgilityPack;
 using Iyu.Windows.Mvvm;
 using Iyu.Windows;
 using Iyu;
+using System.Web;
+using Microsoft.UI.Xaml;
+using System.ComponentModel;
+using Microsoft.UI.Windowing;
 
 namespace WebPageInspector.Contexts
 {
@@ -13,6 +17,9 @@ namespace WebPageInspector.Contexts
     {
         [GeneratedRegex(@"\bhttps?://[^\s<>""]+(\?[^\s<>""]*)?")]
         private static partial Regex Regex_LINK();
+        
+        [GeneratedRegex(@"\bhttps?://[^\s<>""]+")]
+        private static partial Regex Regex_URL_END();
 
         [GeneratedRegex(@"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")]
         private static partial Regex Regex_EMAIL();
@@ -141,52 +148,69 @@ function highlightNode(xpath) {
             if (HtmlDoc == null) return Enumerable.Empty<string>();
 
             var links = new List<string>();
+            var exceptTexts = new[] { "javascript:", "mailto:", ".js", ".png", ".jpg" };
 
-            // <a> 태그 및 <link> 태그에서 링크 추출
-            var linkNodes = HtmlDoc.DocumentNode.SelectNodes("//a[@href] | //link[@href and @rel='stylesheet']");
+            // URL이 유효하게 끝나는 지점을 식별하는 정규식
+            var urlEndRegex = Regex_URL_END();
+
+            // <a>, <iframe> 태그에서 URL 추출
+            var linkNodes = HtmlDoc.DocumentNode.SelectNodes("//a[@href] | //iframe[@src]");
             if (linkNodes != null)
             {
-                links.AddRange(linkNodes.Select(node =>
+                foreach (var node in linkNodes)
                 {
-                    var path = node.Name switch
+                    var url = node.Attributes["href"]?.Value ?? node.Attributes["src"]?.Value;
+                    if (!string.IsNullOrWhiteSpace(url))
                     {
-                        "a" => node.GetAttributeValue("href", string.Empty),
-                        "link" => node.GetAttributeValue("href", string.Empty),
-                        _ => string.Empty
-                    };
-                    if (path.StartsWith("http"))
-                        return path;
-                    else
-                        return $"{Url}{path}";
-                }));
+                        // URL의 유효한 끝 부분을 찾습니다.
+                        var match = urlEndRegex.Match(url);
+                        if (match.Success)
+                        {
+                            var validUrl = match.Value;
+                            if (!exceptTexts.Any(p => validUrl.Contains(p)))
+                            {
+                                var absoluteUrl = validUrl.StartsWith("http://") || validUrl.StartsWith("https://")
+                                    ? validUrl
+                                    : new Uri(new Uri(Url), validUrl).ToString();
+                                links.Add(absoluteUrl);
+                            }
+                        }
+                    }
+                }
             }
 
-            // 이미지 형식의 링크는 제외
-            var exceptNames = new[] { ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico" };
-
-            // 텍스트 노드에서 "http://" 또는 "https://"로 시작하는 모든 URL 찾기
-            var textNodes = HtmlDoc.DocumentNode.SelectNodes("//text()[contains(., 'http://') or contains(., 'https://')]");
+            // 모든 DOM 요소에서 URL 찾기
+            var textNodes = HtmlDoc.DocumentNode.SelectNodes("//text()");
             if (textNodes != null)
             {
                 var urlRegex = Regex_LINK();
                 foreach (var node in textNodes)
                 {
                     var matches = urlRegex.Matches(node.InnerText);
-                    foreach (Match match in matches.Cast<Match>())
+                    foreach (var match in matches.Cast<Match>())
                     {
                         if (match.Success)
                         {
-                            // 이미지 형식의 링크는 제외
-                            if (exceptNames.Any(p => match.Value.EndsWith(p))) continue;
-
-                            var v = match.Value.LeftOr(")}");
-                            links.Add(v);
+                            // URL의 유효한 끝 부분을 찾습니다.
+                            var validMatch = urlEndRegex.Match(match.Value);
+                            if (validMatch.Success)
+                            {
+                                var validUrl = validMatch.Value;
+                                if (!exceptTexts.Any(p => validUrl.Contains(p)))
+                                {
+                                    var absoluteUrl = validUrl.StartsWith("http://") || validUrl.StartsWith("https://")
+                                        ? validUrl
+                                        : new Uri(new Uri(Url), validUrl).ToString();
+                                    links.Add(absoluteUrl);
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            return await Task.FromResult(links.Distinct().ToList());
+            var results = links.Select(p => HttpUtility.UrlDecode(p)).Distinct().ToList();
+            return await Task.FromResult(results);
         }
 
         private async Task<IEnumerable<string>> InitImagesAsync()
@@ -244,12 +268,10 @@ function highlightNode(xpath) {
         {
             if (this.Links == null)
             {
-                while(this.Links == null)
-                {
-                    await Task.Delay(100);
-                }
+                // 링크가 초기화 될 때까지 대기합니다.
+                await this.WhenPropertyNotNullAsync(propertyName: nameof(this.Links));
             }
-            return this.Links;
+            return this.Links ?? Enumerable.Empty<string>();
         }
 
         partial void OnSelectedNodeChanged(HtmlNodeContext? value)
