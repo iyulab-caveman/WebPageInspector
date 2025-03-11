@@ -105,7 +105,7 @@ namespace WebPageInspector.Models
         public override IWebCrawlingAction? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var dic = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(ref reader, options);
-            if (dic != null && dic.TryGetValueWithIgnoreCase("Type", out JsonElement value))
+            if (dic != null && dic.TryGetValueIgnoreCase("Type", out JsonElement value))
             {
                 var type = value.GetString();
                 var json = JsonSerializer.Serialize(dic, options);
@@ -132,7 +132,7 @@ namespace WebPageInspector.Models
         public override IOutputStorage Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var dic = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(ref reader, options);
-            if (dic != null && dic.TryGetValueWithIgnoreCase("Type", out JsonElement value))
+            if (dic != null && dic.TryGetValueIgnoreCase("Type", out JsonElement value))
             {
                 var type = value.GetString();
                 var json = JsonSerializer.Serialize(dic, options);
